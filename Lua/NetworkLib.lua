@@ -1,4 +1,4 @@
---Reference Version: A0.0.1
+--Refernce Version: A0.1.0
 local nl = {}
 local socket = require("socket")
 
@@ -27,22 +27,21 @@ function nl:init(ip, port)
         self.is_connected = true
         return "Connected instantly!"
     else
-        return "Connection initiated, waiting for handshake... Status: " .. tostring(err)
+        return "Connection initiated, waiting... Status: " .. tostring(err)
     end
 end
 
-function nl:update_game_network(dt)
-    if not self.client then return nil end
+function nl:update_game_network()
+    if not self.client then return nil, "No client" end
 
     if not self.is_connected then
         local _, writable, err = socket.select(nil, {self.client}, 0)
 
         if writable and writable[1] == self.client then
             local _, send_err = self.client:send("")
-            if send_err then
-                self.client:close()
-                self.client = nil
-                return "Connection failed during handshake: " .. tostring(send_err)
+            if send_err and send_err ~= "timeout" then
+                self:close_connection()
+                return nil, "Connection failed during handshake: " .. tostring(send_err)
             end
 
             self.is_connected = true
@@ -50,13 +49,12 @@ function nl:update_game_network(dt)
         elseif err == "timeout" then
             return nil
         else
-            self.client:close()
-            self.client = nil
-            return "Connection failed: " .. tostring(err)
+            self:close_connection()
+            return nil, "Connection failed: " .. tostring(err)
         end
     end
 
-    local data, err, partial = self.client:receive(1024)
+    local data, err, partial = self.client:receive("*a") 
     local chunk = data or partial
 
     if chunk and #chunk > 0 then
@@ -64,58 +62,57 @@ function nl:update_game_network(dt)
     end
 
     if err == "closed" then
-        self.client:close()
-        self.client = nil
-        self.is_connected = false
-        return "Server disconnected."
+        self:close_connection()
+        return nil, "Server disconnected."
     end
 
     local field, rest = self.rx_buffer:match("^([^\031]*)\031(.*)$")
     if field then
         self.rx_buffer = rest
-        return "Received complete message: " .. field
+        return field
     end
 
     return nil
 end
 
-function nl:_send(opcode, ...)
-    if not self.is_connected or not self.client then return end
+function nl:close_connection()
+    if self.client then
+        self.client:close()
+        self.client = nil
+    end
+    self.is_connected = false
+    self.rx_buffer = ""
+end
 
+function nl:_send_raw(msg)
+    if not self.is_connected or not self.client then return nil, "Not connected" end
+
+    local bytes_sent, err, bytes_sent_so_far = self.client:send(msg)
+
+    if err then
+        self:close_connection()
+        return nil, "Send error (Stream desynced): " .. tostring(err)
+    end
+    return true
+end
+
+function nl:_send(opcode, ...)
     local parts = { string.char(opcode) }
     for _, arg in ipairs({ ... }) do
         table.insert(parts, tostring(arg))
         table.insert(parts, DEL)
     end
-    local msg = table.concat(parts)
-
-    local bytes_sent, err, bytes_sent_so_far = self.client:send(msg)
-
-    if err == "timeout" then
-        return "Network buffer full, sent partial: " .. tostring(bytes_sent_so_far)
-    elseif err then
-        return "Send error: " .. tostring(err)
-    end
+    return self:_send_raw(table.concat(parts))
 end
 
 function nl:_send_variadic(opcode, ...)
-    if not self.is_connected or not self.client then return end
-
     local parts = { string.char(opcode) }
     for _, arg in ipairs({ ... }) do
         table.insert(parts, tostring(arg))
         table.insert(parts, DEL)
     end
     table.insert(parts, END)
-    local msg = table.concat(parts)
-
-    local bytes_sent, err, bytes_sent_so_far = self.client:send(msg)
-
-    if err == "timeout" then
-        return "Network buffer full, sent partial: " .. tostring(bytes_sent_so_far)
-    elseif err then
-        return "Send error: " .. tostring(err)
-    end
+    return self:_send_raw(table.concat(parts))
 end
 
 function nl:SET(var, value)    self:_send(OP.SET, var, value) end
