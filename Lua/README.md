@@ -1,11 +1,28 @@
-# NetworkLib - Lua
+# NetworkLib - Lua Client
+
+A lightweight Lua client for interacting with the NetworkLib backend.
+
 ---
 
-In the example you can see how to run all different NL commands.
+This client allows you to execute all available NetworkLib commands seamlessly. You can find a complete implementation in the `example.lua` file.
 
-### How to run?
+## How to Run the Example (or your own code)
 
-1. Open your Go server and wait it to end the tests
-2. Run your Lua file
+Follow these simple steps to get the environment up and running:
 
-Simple, right?
+### 1. Start the Go Server
+Make sure your NetworkLib Go backend is running and ready to accept connections:
+```bash
+# Navigate to your Go server directory and run it
+go run main.go
+```
+
+### 2. Run the Lua Script
+Once the server is active, execute your Lua file:
+```bash
+lua example.lua
+```
+
+---
+
+*Simple, right? If you encounter any issues, please open an issue or a Pull Request!*
