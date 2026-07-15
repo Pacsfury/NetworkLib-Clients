@@ -1,3 +1,4 @@
+--DEPRECATED EXAMPLE: Correct one coming soon
 local nl = require("NetworkLib")
 
 local dt = 1 
