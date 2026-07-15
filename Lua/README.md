@@ -24,18 +24,15 @@ nl:SET("hp", 100)
 
 Follow these simple steps to get the environment up and running:
 
-### 1. Start the Go Server
-Make sure your NetworkLib Go backend is running and ready to accept connections:
+This example already starts the server **on Windows**. If you don't use Windows, start the server executing the Go files. 
+
+Once the server is running, start as many instances as you want:
+
 ```bash
-# Navigate to your Go server directory and run it
-go run main.go
+love .
 ```
 
-### 2. Run the Lua Script
-Once the server is active, execute your Lua file:
-```bash
-lua example.lua
-```
+You will see the player position is syncronized!
 
 ---
 
