@@ -1,4 +1,4 @@
---Refernce Version: A0.1.0
+--Reference Version: A0.1.0
 local nl = {}
 local socket = require("socket")
 
@@ -13,6 +13,8 @@ local OP = {
     SIGNAL = 0x5,
     SUB    = 0x6,
 }
+
+local DEFAULT_GET_TIMEOUT = 5
 
 function nl:init(ip, port)
     self.client = socket.tcp()
@@ -29,6 +31,31 @@ function nl:init(ip, port)
     else
         return "Connection initiated, waiting... Status: " .. tostring(err)
     end
+end
+
+function nl:_pop_field()
+    local field, rest = self.rx_buffer:match("^([^\031]*)\031(.*)$")
+    if field then
+        self.rx_buffer = rest
+        return field
+    end
+    return nil
+end
+
+function nl:_drain_socket()
+    local data, err, partial = self.client:receive("*a")
+    local chunk = data or partial
+
+    if chunk and #chunk > 0 then
+        self.rx_buffer = self.rx_buffer .. chunk
+    end
+
+    if err == "closed" then
+        self:close_connection()
+        return nil, "closed"
+    end
+
+    return true
 end
 
 function nl:update_game_network()
@@ -54,25 +81,12 @@ function nl:update_game_network()
         end
     end
 
-    local data, err, partial = self.client:receive("*a") 
-    local chunk = data or partial
-
-    if chunk and #chunk > 0 then
-        self.rx_buffer = self.rx_buffer .. chunk
+    local ok, drain_err = self:_drain_socket()
+    if not ok then
+        return nil, drain_err == "closed" and "Server disconnected." or drain_err
     end
 
-    if err == "closed" then
-        self:close_connection()
-        return nil, "Server disconnected."
-    end
-
-    local field, rest = self.rx_buffer:match("^([^\031]*)\031(.*)$")
-    if field then
-        self.rx_buffer = rest
-        return field
-    end
-
-    return nil
+    return self:_pop_field()
 end
 
 function nl:close_connection()
@@ -115,11 +129,42 @@ function nl:_send_variadic(opcode, ...)
     return self:_send_raw(table.concat(parts))
 end
 
-function nl:SET(var, value)    self:_send(OP.SET, var, value) end
-function nl:GET(var)           self:_send(OP.GET, var) end
-function nl:TEMP(var, value)   self:_send(OP.TEMP, var, value) end
-function nl:CONST(var, value)  self:_send(OP.CONST, var, value) end
-function nl:SIGNAL(...)        self:_send_variadic(OP.SIGNAL, ...) end
-function nl:SUB(var)           self:_send(OP.SUB, var) end
+function nl:GET(var, timeout)
+    local ok, err = self:_send(OP.GET, var)
+    if not ok then return nil, err end
+
+    timeout = timeout or DEFAULT_GET_TIMEOUT
+    local deadline = socket.gettime() + timeout
+
+    while true do
+        local field = self:_pop_field()
+        if field then return field end
+
+        local remaining = deadline - socket.gettime()
+        if remaining <= 0 then
+            return nil, "GET timed out waiting for '" .. tostring(var) .. "'"
+        end
+
+        local readable, _, select_err = socket.select({ self.client }, nil, remaining)
+
+        if readable and readable[1] then
+            local ok2, drain_err = self:_drain_socket()
+            if not ok2 then
+                return nil, drain_err == "closed"
+                    and "Server disconnected while waiting for GET."
+                    or drain_err
+            end
+        elseif select_err ~= "timeout" then
+            self:close_connection()
+            return nil, "Socket error while waiting for GET: " .. tostring(select_err)
+        end
+    end
+end
+
+function nl:SET(var, value)    return self:_send(OP.SET, var, value) end
+function nl:TEMP(var, value)   return self:_send(OP.TEMP, var, value) end
+function nl:CONST(var, value)  return self:_send(OP.CONST, var, value) end
+function nl:SIGNAL(...)        return self:_send_variadic(OP.SIGNAL, ...) end
+function nl:SUB(var)           return self:_send(OP.SUB, var) end
 
 return nl
