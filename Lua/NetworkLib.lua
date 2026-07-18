@@ -110,7 +110,3 @@ function nl:update_game_network()
 end
 
 return nl
-    end
-end
-
-return nl
