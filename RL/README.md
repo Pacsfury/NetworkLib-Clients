@@ -24,10 +24,12 @@ client_set(myclient, "hp", 100)
 
 Follow these simple steps to get the environment up and running:
 
+First, install the RL interpreter [from here](https://github.com/rl-lang/rl-lang).
+
 Once the server is running, start as many instances as you want:
 
 ```bash
-rl run main.rl
+./rl run main.rl
 ```
 The server receives a set request!
 
