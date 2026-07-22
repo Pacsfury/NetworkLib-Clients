@@ -1,10 +1,10 @@
 # NetworkLib - Rl Client
 
-A lightweightRL  client for interacting with the NetworkLib backend.
+A lightweight RL  client for interacting with the NetworkLib backend.
 
 ---
 
-This client allows you to execute all available NetworkLib commands seamlessly. You can find a complete implementation in the `example.RL` file. (add functions to the RL file with `get nl`).
+This client allows you to execute all available NetworkLib commands seamlessly. You can ffind an example in the `example.RL` file.
 
 ### Quick Cheatsheet
 
