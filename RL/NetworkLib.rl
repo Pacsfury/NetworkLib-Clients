@@ -73,16 +73,28 @@ fn client_get(NetworkClient client, string key) -> string {
     dec arr[string] args = [key]
     client_send_cmd(client, OPCODE_GET, args, false)
 
-    dec string temp_buffer = ""
+    dec string confirmation = ""
     while (true) {
-        dec string rbyte = tcp_read(client.conn, 1)?
+        dec string rbyte = result_unwrap(tcp_read(client.conn, 1))
         if (rbyte == "" or rbyte == DEL) {
-            return temp_buffer
+            break
         }
-        temp_buffer = concat(temp_buffer, rbyte)
+        confirmation = concat(confirmation, rbyte)
     }
-    return temp_buffer
+
+    dec string rvalue = ""
+    while (true) {
+        dec string byt = result_unwrap(tcp_read(client.conn, 1))
+
+        if (byt == "" or byt == DEL) {
+            return rvalue
+        }
+        
+        rvalue = concat(rvalue, byt)
+    }
+    return rvalue
 }
+
 
 fn client_set(NetworkClient client, string key, string val) {
     dec arr[string] args = [key, val]
