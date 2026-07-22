@@ -9,6 +9,7 @@ This repository contains client implementations for various programming language
 ## Supported Languages
 
 * **Lua** (Examples and library files included)
+* **RL** (Examples, repository link and library files included)
 * _More languages coming soon!_
 
 ## Installation & Usage
@@ -18,9 +19,15 @@ This repository contains client implementations for various programming language
 2. Include it in your project.
 3. Check the `example.lua` file for an example guide.
 
+### Lua
+1. Install the [RL interpreter](https://github.com/rl-lang/rl-lang)
+1. Download the client file from the `RL/` directory.
+2. Include it in your project.
+3. Check the `example.rl` file for a simple example guide.
+
 ## Contributing
 
-Contributions are welcome! If you have implemented a client for a language that is not listed yet, please feel free to open a Pull Request (PR). 
+Contributions are welcome! If you have implemented a client for a language that is not listed yet, please feel free to open a Pull Request. 
 
 ### How to contribute a new client:
 1. Fork this repository.
