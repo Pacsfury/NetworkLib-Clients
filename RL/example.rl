@@ -1,4 +1,5 @@
 // Send a SET messsage to server
+get nl
 
 fn main() {
     dec NetworkClient myclient = client_new()
