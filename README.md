@@ -19,7 +19,7 @@ This repository contains client implementations for various programming language
 2. Include it in your project.
 3. Check the `example.lua` file for an example guide.
 
-### Lua
+### RL
 1. Install the [RL interpreter](https://github.com/rl-lang/rl-lang)
 1. Download the client file from the `RL/` directory.
 2. Include it in your project.
